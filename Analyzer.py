@@ -29,7 +29,7 @@ def main(filename):
 
         if type == Token_Types.keyword:
             key = tokenizer.keyWord()
-            if key == 'class':
+            # if key == 'class':
 
 
 
