@@ -40,7 +40,57 @@ class Key_Words(Enum):
     null_key        = "NULL"
     this_key        = "THIS"
 
+keywords = {
+    'class',
+    'constructor',
+    'function',
+    'method',
+    'field',
+    'static',
+    'var',
+    'int',
+    'char',
+    'boolean',
+    'void',
+    'true',
+    'false',
+    'null',
+    'this',
+    'let',
+    'do',
+    'if',
+    'else',
+    'while',
+    'return'
 
+}
+
+symbols = {
+    '{',
+    '}',
+    '(',
+    ')',
+    '[',
+    ']',
+    '.',
+    ',',
+    ';',
+    '+',
+    '-',
+    '*',
+    '/',
+    '&',
+    '|',
+    '<',
+    '>',
+    '=',
+    '~'
+}
+
+STRING_DELIM = "\""
+
+INT_CONST_MIN = 0
+INT_CONST_MAX = 32767
 
 
 class JackTokenizer():
