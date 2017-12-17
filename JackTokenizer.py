@@ -3,15 +3,18 @@
 """
 from enum import Enum, unique
 
+
 @unique
 class Token_Types(Enum):
     """
 
     """
     keyword         = "KEYWORD"
+    symbol          = "SYMBOL"
     identifier      = "IDENTIFIER"
     int_const       = "INT_CONST"
     string_const    = "STRING_CONST"
+
 
 @unique
 class Key_Words(Enum):
@@ -62,7 +65,6 @@ keywords = {
     'else',
     'while',
     'return'
-
 }
 
 symbols = {
@@ -119,6 +121,7 @@ class JackTokenizer():
         has more tokens is true. There is no initial token in cur.
         :return:
         """
+        pass
 
     def token_type(self):
         """
