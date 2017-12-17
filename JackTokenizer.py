@@ -70,7 +70,7 @@ class JackTokenizer():
         :return:
         """
 
-    def tokenType(self):
+    def token_type(self):
         """
         Returns the type of the tokenizer
         :return:
