@@ -20,10 +20,10 @@ class CompilationEngine():
         """
         self.tokenizer = JackTokenizer(input_file)
         self.output = open(output_file)
-        self.write("tokens")
+        # self.write("tokens")
         self.indent = 0
 
-        self.call_compile_func()
+        self.full_recursion()
         # with open(output_file) as self.output:
         #     pass
 
@@ -33,12 +33,19 @@ class CompilationEngine():
         Compiles a complete class
         :return:
         """
+        self.write('classDec', num_tabs=self.indent)
+
+        self.tokenizer.advance()
+        self.write_terminal(Token_Types.identifier, self.tokenizer.identifier())
+
+
+        self.write('{')
 
 
 
 
 
-    def compile_class_car_dec(self):
+    def compile_class_var_dec(self):
         """
         Compiles a static declaration or a field declaration.
         :return:
@@ -69,7 +76,8 @@ class CompilationEngine():
         Compiles a var declaration
         :return:
         """
-        pass
+        self.write("varDec", num_tabs=self.indent)
+        self.write_terminal("varDec", 4)
 
 
     def compile_statements(self):
@@ -165,37 +173,60 @@ class CompilationEngine():
             self.output.write("\t" * num_tabs + str + "\n")
 
 
-    def write_terminal(self, type, arg):
+    def write_terminal(self, t_type, arg):
         """
 
-        :param type:
+        :param t_type:
         :param arg:
         :return:
         """
-        self.write(type.value, num_tabs=self.indent)
-        self.write(type.value + " " + arg, delim=False,
+        self.write(t_type.value, num_tabs=self.indent)
+        self.write(t_type.value + " " + arg, delim=False,
                    num_tabs=self.indent + 1)
-        self.write(type.value, num_tabs=self.indent, end=True)
+        self.write(t_type.value, num_tabs=self.indent, end=True)
 
 
-    def write_recursive(self, type):
+    def write_recursive(self, name, advance_lim=1):
         """
 
-        :param type:
+        :param name:
+        :param advance_lim:
         :return:
         """
-        self.write(type.value, num_tabs=self.indent)
+        self.write(name, num_tabs=self.indent)
+
         self.indent += 1
+        self.call_single()
+        for _ in range(advance_lim - 1):
+            if self.tokenizer.has_more_tokens():
+                self.tokenizer.advance()
+                self.call_single()
+            else:
+                raise ValueError("expected more tokens")
 
-        # need some sort of termination in call compile
-        # or type specific implementation
-        self.call_compile_func()
-
-        self.write(type.value, num_tabs=self.indent, end=True)
+        # self.write(name + " " + arg, delim=False,
+        #            num_tabs=self.indent + 1)
+        self.write(name, num_tabs=self.indent, end=True)
 
 
+    # def write_recursive(self, type):
+    #     """
+    #
+    #     :param type:
+    #     :return:
+    #     """
+    #     self.write(type.value, num_tabs=self.indent)
+    #     self.indent += 1
+    #
+    #     # need some sort of termination in call compile
+    #     # or type specific implementation
+    #     self.full_recursion()
+    #
+    #     self.write(type.value, num_tabs=self.indent, end=True)
 
-    def call_compile_func(self):
+
+
+    def full_recursion(self):
         """
 
         :param token:
@@ -228,6 +259,37 @@ class CompilationEngine():
 
             else:
                 self.write_recursive(type)
+
+
+    def call_single(self):
+        """
+
+        :return:
+        """
+        type = self.tokenizer.token_type()
+
+        terminal_arg = False
+
+        if type == Token_Types.keyword:
+            terminal_arg = self.tokenizer.keyWord()
+
+        if type == Token_Types.symbol:
+            terminal_arg = self.tokenizer.symbol()
+
+        if type == Token_Types.identifier:
+            terminal_arg = self.tokenizer.identifier()
+
+        if type == Token_Types.int_const:
+            terminal_arg = self.tokenizer.intVal()
+
+        if type == Token_Types.string_const:
+            terminal_arg = self.tokenizer.stringVal()
+
+        if terminal_arg:
+            self.write_terminal(type, terminal_arg)
+
+        else:
+            self.write_recursive(type)
 
 
 
