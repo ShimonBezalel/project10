@@ -2,6 +2,8 @@
 
 """
 
+from JackTokenizer import JackTokenizer, Token_Types, keywords
+
 
 
 class CompilationEngine():
@@ -16,7 +18,14 @@ class CompilationEngine():
         :param input_file:
         :param output_file:
         """
-        pass
+        self.tokenizer = JackTokenizer(input_file)
+        self.output = open(output_file)
+        self.write("tokens")
+        self.indent = 0
+
+        self.call_compile_func()
+        # with open(output_file) as self.output:
+        #     pass
 
 
     def compile_class(self):
@@ -24,7 +33,9 @@ class CompilationEngine():
         Compiles a complete class
         :return:
         """
-        pass
+
+
+
 
 
     def compile_class_car_dec(self):
@@ -138,3 +149,87 @@ class CompilationEngine():
         :return:
         """
         pass
+
+
+    def write(self, str, delim = True, num_tabs = 0, end = False):
+        """
+
+        :param str:
+        :return:
+        """
+        if end:
+            str = "/" + str
+        if delim:
+            self.output.write("\t" * num_tabs + "<" + str + ">\n")
+        else:
+            self.output.write("\t" * num_tabs + str + "\n")
+
+
+    def write_terminal(self, type, arg):
+        """
+
+        :param type:
+        :param arg:
+        :return:
+        """
+        self.write(type.value, num_tabs=self.indent)
+        self.write(type.value + " " + arg, delim=False,
+                   num_tabs=self.indent + 1)
+        self.write(type.value, num_tabs=self.indent, end=True)
+
+
+    def write_recursive(self, type):
+        """
+
+        :param type:
+        :return:
+        """
+        self.write(type.value, num_tabs=self.indent)
+        self.indent += 1
+
+        # need some sort of termination in call compile
+        # or type specific implementation
+        self.call_compile_func()
+
+        self.write(type.value, num_tabs=self.indent, end=True)
+
+
+
+    def call_compile_func(self):
+        """
+
+        :param token:
+        :return:
+        """
+        while self.tokenizer.has_more_tokens():
+            self.tokenizer.advance()
+
+            type = self.tokenizer.token_type()
+
+            terminal_arg = False
+
+            if type == Token_Types.keyword:
+                terminal_arg = self.tokenizer.keyWord()
+
+            if type == Token_Types.symbol:
+                terminal_arg = self.tokenizer.symbol()
+
+            if type == Token_Types.identifier:
+                terminal_arg = self.tokenizer.identifier()
+
+            if type == Token_Types.int_const:
+                terminal_arg = self.tokenizer.intVal()
+
+            if type == Token_Types.string_const:
+                terminal_arg = self.tokenizer.stringVal()
+
+            if terminal_arg:
+                self.write_terminal(type, terminal_arg)
+
+            else:
+                self.write_recursive(type)
+
+
+
+
+
