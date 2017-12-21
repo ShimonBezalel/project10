@@ -325,6 +325,7 @@ class CompilationEngine():
                 self.eat(')')
                 self.write("<symbol> ) </symbol>")
             elif next_symbol == '.':
+                pass
             else:
                 raise Exception()
 

@@ -21,17 +21,15 @@ class Analyzer():
     def __init__(self):
         pass
 
-    def tokenize(self, filename):
-        tokenizer = JackTokenizer(filename + FILE_EXTENSION_JACK)
-        with open(filename + "T" + FILE_EXTENSION_XML, 'w') as out:
+    def tokenize(self, source, destination):
+        tokenizer = JackTokenizer(source)
+        with open(destination, 'w') as out:
             out.write("<tokens>\n")
             while tokenizer.has_more_tokens():
                 tokenizer.advance()
                 out.write("<" + tokenizer.token_type().value + "> "
                           + tokenizer.cur_val + " </" +
                           tokenizer.token_type().value + ">\n")
-
-                print(tokenizer.token_type().value.lower(), tokenizer.cur_val)
             out.write("</tokens>\n")
 
     def compile(self, source, destination):
