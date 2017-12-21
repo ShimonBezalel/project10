@@ -2,7 +2,7 @@
 
 """
 
-from JackTokenizer import JackTokenizer, Token_Types, keywords
+from JackTokenizer import JackTokenizer, Token_Types, KEYWORDS
 
 END_LINE = "\n"
 EXPREESSIONS = {"INT_CONST": "integerConstant",
