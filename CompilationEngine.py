@@ -4,7 +4,12 @@
 
 from JackTokenizer import JackTokenizer, Token_Types, keywords
 
-
+END_LINE = "\n"
+EXPREESSIONS = {"INT_CONST": "integerConstant",
+                "STRING_CONST": "stringConstant",
+                "KEYWORD": "KeywordConstant",
+                "IDENTIFIER": "identifier"}
+# SPACE = " "
 
 class CompilationEngine():
     """
@@ -21,11 +26,13 @@ class CompilationEngine():
         self.tokenizer = JackTokenizer(input_file)
         self.output = open(output_file)
         # self.write("tokens")
-        self.indent = 0
+        # self.indent = 0
 
-        self.full_recursion()
+        # self.full_recursion()
         # with open(output_file) as self.output:
         #     pass
+        self.num_spaces = 0
+        # self.prefix = ""
 
 
     def compile_class(self):
@@ -41,8 +48,17 @@ class CompilationEngine():
 
         self.write('{')
 
+    def eat(self, string):
+        type = self.tokenizer.token_type()
+        value = "not keyword and not symbol"
+        if type == Token_Types.keyword:
+           value = self.tokenizer.keyWord()
+        elif type == Token_Types.symbol:
+            value = self.tokenizer.symbol()
 
-
+        if value != string:
+            raise Exception(value + "- is not the expected string, " + string)
+        self.tokenizer.advance()
 
 
     def compile_class_var_dec(self):
@@ -85,16 +101,39 @@ class CompilationEngine():
         Compile a sequence of statements not including the "{}"
         :return:
         """
+        if not self.tokenizer.token_type() in keywords:
+            raise Exception("Can't use compile_statement if the current token isn't a keyword.");
+        statement = self.tokenizer.keyWord()
 
-        pass
-
+        self.write(statement + "Statement", True)
+        if statement == 'let':
+            self.compile_let()
+        elif statement == 'if':
+            self.compile_if()
+        elif statement == 'while':
+            self.compile_while()
+        elif statement == 'do':
+            self.compile_do()
+        elif statement == 'return':
+            self.compile_return()
+        else:
+            raise Exception("Invalid statement.")
+        self.write(statement + "Statement", True, True)
 
     def compile_do(self):
         """
         Compile do statment
         :return:
         """
-        pass
+        self.eat('do')
+        self.num_spaces += 1
+        self.write("<keyword> do </keyword>")
+
+        self.compile_subroutineCall()
+
+        self.eat(';')
+        self.write("<symbol> ; </symbol>")
+        self.num_spaces -= 1
 
 
     def compile_let(self):
@@ -102,15 +141,60 @@ class CompilationEngine():
         Compile let statement
         :return:
         """
-        pass
+        self.eat('let')
+        self.num_spaces += 1
+        self.write("<keyword> let </keyword>")
 
+        self.compile_var_dec()
+        self.possible_array()
+
+        self.eat('=')
+        self.write("<symbol> = </symbol>")
+
+        self.compile_expression()
+
+        self.eat(';')
+        self.write("<symbol> ; </symbol>")
+        self.num_spaces -= 1
+        # self.write("</letStatement>")
+
+    def possible_array(self):
+        try:
+            self.eat('[')
+        except:
+            # There is no array
+            return
+        # There is an array
+        self.write("<symbol> [ </symbol>")
+        self.compile_expression()
+        self.eat(']')
+        self.write("<symbol> ] </symbol>")
 
     def compile_while(self):
         """
 
         :return:
         """
-        pass
+        self.eat('while')
+        # self.write("<whileStatement>")
+        self.num_spaces += 1
+        self.write("<keyword> while </keyword>")
+
+        self.eat('(')
+        self.write("<symbol> ( </symbol>")
+        self.compile_expression()
+        self.eat(')')
+        self.write("<symbol> ) </symbol>")
+
+        self.eat('{')
+        self.write("<symbol> { </symbol>")
+        self.compile_statements()
+        self.eat('}')
+        self.write("<symbol> } </symbol>")
+
+        self.num_spaces -= 1
+        # self.write("</whileStatement>")
+
 
 
     def compile_return(self):
@@ -118,7 +202,18 @@ class CompilationEngine():
 
         :return:
         """
-        pass
+        self.eat('return')
+        self.num_spaces += 1
+        self.write("<keyword> return </keyword>")
+
+        try:
+            self.eat(';')
+        except: # would it work?
+            self.compile_expression()
+            self.eat(';')
+
+        self.write("<symbol> ; </symbol>")
+        self.num_spaces -= 1
 
 
     def compile_if(self):
@@ -126,8 +221,42 @@ class CompilationEngine():
 
         :return:
         """
-        pass
+        self.eat('if')
+        # self.write("<ifStatement>")
+        self.num_spaces += 1
+        self.write("<keyword> if </keyword>")
 
+        self.eat('(')
+        self.write("<symbol> ( </symbol>" + END_LINE)
+        self.compile_expression()
+        self.eat(')')
+        self.write("<symbol> ) </symbol>" + END_LINE)
+
+        self.eat('{')
+        self.write("<symbol> { </symbol>" + END_LINE)
+        self.compile_statements()
+        self.eat('}')
+        self.write("<symbol> } </symbol>" + END_LINE)
+        self.possible_else()
+
+        self.num_spaces -= 1
+        # self.write("</ifStatement>" + END_LINE)
+
+    def possible_else(self):
+        try:
+            self.eat('else')
+        except:
+            # There is no else so we can return
+            return
+
+        # There is an else, so we handle it properly
+        self.write("<keyword> else </keyword>" + END_LINE)
+
+        self.eat('{')
+        self.write("<symbol> { </symbol>" + END_LINE)
+        self.compile_statements()
+        self.eat('}')
+        self.write("<symbol> } </symbol>" + END_LINE)
 
     def compile_expression(self):
         """
@@ -136,6 +265,8 @@ class CompilationEngine():
         """
         pass
 
+    def compile_subroutineCall(self):
+        pass
 
     def compile_term(self):
         """
@@ -148,8 +279,54 @@ class CompilationEngine():
         advanced over.
         :return:
         """
-        pass
+        self.write("term", True)
+        self.num_spaces += 1
 
+        type = self.tokenizer.token_type()
+        # maybe i should divide it for int and string
+        if type == Token_Types.int_const or type == Token_Types.string_const :
+            value = self.tokenizer.intVal() if type == Token_Types.int_const else self.tokenizer.stringVal()
+            self.write("<" + EXPREESSIONS[type] + ">\t" +
+                       value +
+                       "\t</" + EXPREESSIONS[type] + ">")
+        elif type == Token_Types.keyword:
+            if self.tokenizer.keyWord().value in ["TRUE", "FALSE", "NULL", "THIS"]:
+                self.write("<" + EXPREESSIONS[type] + ">\t" +
+                           self.tokenizer.keyWord().value.lower() +
+                           "\t</" + EXPREESSIONS[type] + ">" + END_LINE)
+            else:
+                raise Exception()
+        elif type == Token_Types.identifier:
+            self.term_identifier(self.tokenizer.identifier())
+
+        self.num_spaces -= 1
+        self.write("term", True, True)
+
+    def term_identifier(self, var_name):
+        # try:
+        #     self.eat("[")
+        # except:
+        # if not self.tokenizer.has_more_tokens(): # already doing it by itself
+        #     raise Exception()
+        self.tokenizer.advance()
+        if self.tokenizer.token_type() == Token_Types.symbol:
+            next_symbol = self.tokenizer.symbol()
+            if next_symbol == '[':
+                self.eat('[')
+                self.write("<symbol> [ </symbol>")
+                self.compile_expression()
+                self.eat(']')
+                self.write("<symbol> ] </symbol>")
+
+            elif next_symbol == '(':
+                self.eat('(')
+                self.write("<symbol> ( </symbol>")
+                self.compile_expression()
+                self.eat(')')
+                self.write("<symbol> ) </symbol>")
+            elif next_symbol == '.':
+            else:
+                raise Exception()
 
     def compile_expression_list(self):
         """
@@ -159,18 +336,20 @@ class CompilationEngine():
         pass
 
 
-    def write(self, str, delim = True, num_tabs = 0, end = False):
+    def write(self, str, delim = False, end = False):
         """
 
         :param str:
         :return:
         """
+
+
         if end:
             str = "/" + str
         if delim:
-            self.output.write("\t" * num_tabs + "<" + str + ">\n")
+            self.output.write("\t" * self.num_spaces + "<" + str + ">" + END_LINE)
         else:
-            self.output.write("\t" * num_tabs + str + "\n")
+            self.output.write("\t" * self.num_spaces + str + END_LINE)
 
 
     def write_terminal(self, t_type, arg):
