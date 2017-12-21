@@ -269,7 +269,7 @@ class JackTokenizer():
                     symbol = '&lt;'
                 elif symbol == '>':
                     symbol = '&gt;'
-                elif symbol == '\"':
+                elif symbol == '\"': # karin: I think it supouse to be '/'
                     symbol = '&quot;'
                 elif symbol == '&':
                     symbol = '&amp;'

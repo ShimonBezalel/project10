@@ -372,14 +372,33 @@ class CompilationEngine():
         # if not self.tokenizer.has_more_tokens(): # already doing it by itself
         #     raise Exception()
         if self.tokenizer.token_type() == Token_Types.symbol:
-            if self.tokenizer.symbol() == '[':
+            next_symbol = self.tokenizer.symbol()
+            if next_symbol == '[':
                 self.eat('[')
                 self.write("<symbol> [ </symbol>")
                 self.compile_expression()
                 self.eat(']')
                 self.write("<symbol> ] </symbol>")
-                return
 
+            # elif next_symbol == '(':
+            #     self.eat('(')
+            #     self.write("<symbol> ( </symbol>")
+            #     self.compile_expression_list()
+            #     self.eat(')')
+            #     self.write("<symbol> ) </symbol>")
+            #
+            # elif next_symbol == '.':
+            #     self.eat('.')
+            #     self.write("<symbol> . </symbol>")
+            #
+            #     self.write("<identifier>\t" + self.tokenizer.identifier() + "\t</identifier>")
+            #     self.tokenizer.advance()
+            #
+            #     self.eat('(')
+            #     self.write("<symbol> ( </symbol>")
+            #     self.compile_expression_list()
+            #     self.eat(')')
+            #     self.write("<symbol> ) </symbol>")
             try:
                 self.subroutineCall_continue()
             except Exception:
