@@ -28,7 +28,7 @@ class Key_Words(Enum):
     function        = "FUNCTION"
     constructor     = "CONSTRUCTOR"
     int_key         = "INT"
-    bool_key        = "BOOL"
+    bool_key        = "BOOLEAN"
     char_key        = "CHAR"
     void_key        = "VOID"
     var_key         = "VAR"
@@ -45,11 +45,6 @@ class Key_Words(Enum):
     null_key        = "NULL"
     this_key        = "THIS"
 
-    # def str_all(self):
-    #     conc_str = ''
-    #     for key in self:
-    #         conc_str += key.value.lower() + "|"
-    #     return conc_str[:-1]
 
 KEYWORDS = [key.value.lower() for key in Key_Words]
 
@@ -101,8 +96,9 @@ class Comp_Exp(Enum):
     """
     comment = re.compile("((\/\/.*)|(\/\*\*((([^*])*([^/])*)|(([^/])*([^*])*))\*\/))")
 
-    # string_single_line = re.compile("(\"((\\\")|([^\"]))*\")")
-    string_single_line = re.compile("(\"[^\"]*\")")
+    string_single_line = re.compile("(\"((\\\\\")|([^\"]))*\")")
+    # string_single_line = re.compile("(\"[^\"]*\")")
+
 
     # string_multi_line_open = re.compile("(\"([^\\\"]*(\\\")*[^\\\"]*)*)")
     # string_multi_line_close = re.compile(".*\"")
@@ -310,12 +306,6 @@ class JackTokenizer():
             else:
                 raise StopIteration("found impossible situation: " + self.text)
 
-
-            # self.cur_line_index += 1
-            #
-            # assert self.has_more_tokens()
-            #
-            # self.cur_line = self.lines[self.cur_line_index]
 
 
 
