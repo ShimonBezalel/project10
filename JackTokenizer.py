@@ -3,6 +3,8 @@
 """
 from enum import Enum, unique
 
+import re
+
 
 @unique
 class Token_Types(Enum):
@@ -94,6 +96,12 @@ STRING_DELIM = "\""
 INT_CONST_MIN = 0
 INT_CONST_MAX = 32767
 
+class Comp_Exp(Enum):
+    """
+
+    """
+    comment = re.compile("\/\/.*")
+
 
 class JackTokenizer():
     """
@@ -104,7 +112,18 @@ class JackTokenizer():
         Opens the input file/stream and gets ready to tokenize it
         :param inputFile:
         """
-        pass
+        with open(inputFile, 'r') as self.file:
+            temp = self.file.read()
+
+        # remove comments
+        clean = Comp_Exp.comment.value.sub(" ", temp)
+
+        # split up into lines
+        self.lines = clean.split("\n")
+
+        # assuming non-empty file
+        self.cur_line = self.lines[0]
+        self.cur_char = 0
 
 
     def has_more_tokens(self):
@@ -112,7 +131,7 @@ class JackTokenizer():
         Any more tokens in input?
         :return: bool
         """
-        pass
+        return not (self.cur_line != self.lines[-1] and self.cur_char < self.c
 
 
     def advance(self):
