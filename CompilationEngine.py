@@ -49,6 +49,12 @@ class CompilationEngine():
         self.write('{')
 
     def eat(self, string):
+        """
+        If the given string is the same as current token (only if it keyword or symbol) the
+        tokenizer of the object will be advanced, otherwise an exception will be raised.
+        :param string: the expected string.
+        :raise: the current token is not the expected string.
+        """
         type = self.tokenizer.token_type()
         value = "not keyword and not symbol"
         if type == Token_Types.keyword:
@@ -98,27 +104,38 @@ class CompilationEngine():
 
     def compile_statements(self):
         """
-        Compile a sequence of statements not including the "{}"
-        :return:
+        Compile a sequence of 0 or more statements, not including the "{}".
         """
-        if self.tokenizer.token_type() != Token_Types.keyword:
-            raise Exception("Can't use compile_statement if the current token isn't a keyword.")
-        statement = self.tokenizer.keyWord()
+        # if self.tokenizer.token_type() != Token_Types.keyword:
+        #     return
+        #     # raise Exception("Can't use compile_statement if the current token isn't a keyword.")
+        # statement = self.tokenizer.keyWord()
+        # if statement not in ['let', 'if', 'while', 'do', 'return']:
+        #     return
+        self.write("statements", True)
+        self.num_spaces += 1
 
-        self.write(statement + "Statement", True)
-        if statement == 'let':
-            self.compile_let()
-        elif statement == 'if':
-            self.compile_if()
-        elif statement == 'while':
-            self.compile_while()
-        elif statement == 'do':
-            self.compile_do()
-        elif statement == 'return':
-            self.compile_return()
-        else:
-            raise Exception("Invalid statement.")
-        self.write(statement + "Statement", True, True)
+        if (self.tokenizer.token_type() == Token_Types.keyword and
+                    self.tokenizer.keyWord() in ['let', 'if', 'while', 'do', 'return']):
+            statement = self.tokenizer.keyWord()
+            self.write(statement + "Statement", True)
+            if statement == 'let':
+                self.compile_let()
+            elif statement == 'if':
+                self.compile_if()
+            elif statement == 'while':
+                self.compile_while()
+            elif statement == 'do':
+                self.compile_do()
+            elif statement == 'return':
+                self.compile_return()
+            # else:
+            #     raise Exception("Invalid statement.")
+            self.write(statement + "Statement", True, True)
+        self.compile_statements()
+
+        self.num_spaces -= 1
+        self.write("statements", True, True)
 
     def compile_do(self):
         """
@@ -143,8 +160,7 @@ class CompilationEngine():
 
     def compile_let(self):
         """
-        Compile let statement
-        :return:
+        Compile let statement.
         """
         self.eat('let')
         self.num_spaces += 1
@@ -164,6 +180,9 @@ class CompilationEngine():
         # self.write("</letStatement>")
 
     def possible_array(self):
+        """
+        Compile 0 or 1 array.
+        """
         try:
             self.eat('[')
         except:
@@ -177,8 +196,7 @@ class CompilationEngine():
 
     def compile_while(self):
         """
-
-        :return:
+        Compile while statement.
         """
         self.eat('while')
         # self.write("<whileStatement>")
@@ -200,12 +218,9 @@ class CompilationEngine():
         self.num_spaces -= 1
         # self.write("</whileStatement>")
 
-
-
     def compile_return(self):
         """
-
-        :return:
+        Compile return statement.
         """
         self.eat('return')
         self.num_spaces += 1
@@ -223,8 +238,7 @@ class CompilationEngine():
 
     def compile_if(self):
         """
-
-        :return:
+        Compile if statement.
         """
         self.eat('if')
         # self.write("<ifStatement>")
@@ -248,6 +262,9 @@ class CompilationEngine():
         # self.write("</ifStatement>" + END_LINE)
 
     def possible_else(self):
+        """
+        Compile 0 or 1 else sections.
+        """
         try:
             self.eat('else')
         except:
@@ -265,7 +282,7 @@ class CompilationEngine():
 
     def compile_expression(self):
         """
-        Compile an expression
+        Compile an expression.
         :return:
         """
         self.write("expression", True)
@@ -279,7 +296,8 @@ class CompilationEngine():
 
     def subroutineCall_continue(self):
         """
-
+        After an identifier there can be a '.' or '(', otherwise it not function call
+        (subroutineCall).
         :return:
         """
         # should i check every time if it's type symbol?
@@ -323,13 +341,15 @@ class CompilationEngine():
 
         type = self.tokenizer.token_type()
         # maybe i should divide it for int and string
-        if type == Token_Types.int_const or type == Token_Types.string_const :
+        # If the token is a string_const or int_const
+        if type in [Token_Types.string_const, Token_Types.int_const] :
             value = self.tokenizer.intVal() if type == Token_Types.int_const else self.tokenizer.stringVal()
             self.write("<" + EXPREESSIONS[type] + ">\t" +
                        value +
                        "\t</" + EXPREESSIONS[type] + ">")
             self.tokenizer.advance()
 
+        # If the token is a keyword
         elif type == Token_Types.keyword:
             if self.tokenizer.keyWord().value in ["TRUE", "FALSE", "NULL", "THIS"]:
                 self.write("<" + EXPREESSIONS[type] + ">\t" +
@@ -339,12 +359,14 @@ class CompilationEngine():
             else:
                 raise Exception()
 
+        # If the token is an identifier
         elif type == Token_Types.identifier:
             # value = self.tokenizer.identifier()
             self.write("<identifier>\t" + self.tokenizer.identifier() + "\t</identifier>")
             self.tokenizer.advance()
             self.possible_identifier_continue()
 
+        # If the token is an symbol
         elif type == Token_Types.symbol:
             if self.tokenizer.symbol() == '(':
                 self.eat('(')
@@ -366,6 +388,14 @@ class CompilationEngine():
         self.write("term", True, True)
 
     def possible_identifier_continue(self):
+        """
+        In a term if identifier continues with
+        - '[' - it's a call of an array
+        - '.' or '('  - it's part of subroutineCall (function call)
+        - nothing - it's a variable
+        This functions handle every one of this situations after the original identifier was
+        handled.
+        """
         # try:
         #     self.eat("[")
         # except:
@@ -383,7 +413,8 @@ class CompilationEngine():
             try:
                 self.subroutineCall_continue()
             except Exception:
-                raise Exception("If there is a symbol in the token it have to be . or [ or (.")
+                # raise Exception("If there is a symbol in the token it have to be . or [ or (.")
+                return
 
     def possible_op_term(self):
         """
@@ -412,8 +443,7 @@ class CompilationEngine():
 
     def compile_expression_list(self):
         """
-        Compile a comma-separated list of expressions, which may be empty
-        :return:
+        Compile a comma-separated list of expressions, which may be empty.
         """
         self.write("expressionList", True)
         self.num_spaces += 1
