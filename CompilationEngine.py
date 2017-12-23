@@ -13,6 +13,7 @@ EXPREESSIONS = {"INT_CONST": "integerConstant",
                 "IDENTIFIER": "identifier"}
 STATEMENTS  = ['let', 'if', 'while', 'do', 'return']
 OPERANDS    = ['+', '-', '*', '&quot', '&amp', '|', '&lt', '&gt', '=']
+ROUTINES    = ['function', 'method', 'constructor']
 
 class CompilationEngine():
     """
@@ -27,17 +28,17 @@ class CompilationEngine():
         :param output_file:
         """
         self.tokenizer = JackTokenizer(input_file)
-        self.output = open(output_file)
         self.num_spaces = 0
-
-        while self.tokenizer.has_more_tokens():
-            self.tokenizer.advance()
-            assert self.tokenizer.token_type() == Token_Types.keyword
-            if self.tokenizer.keyWord() == 'class':
-                self.compile_class()
-            else:
-                raise KeyError("Received a token that does not fit the begining of a "
-                               "module. " + self.tokenizer.keyWord() + " in " + input_file)
+        with open(output_file, 'w') as self.output:
+            while self.tokenizer.has_more_tokens():
+                self.tokenizer.advance()
+                assert self.tokenizer.token_type() == Token_Types.keyword
+                if self.tokenizer.keyWord() == 'class':
+                    self.compile_class()
+                else:
+                    raise KeyError("Received a token that does not fit the begining of a "
+                                   "module. " + self.tokenizer.keyWord()
+                                   + " in " + input_file)
 
     def compile_class(self):
         """
@@ -49,29 +50,28 @@ class CompilationEngine():
         self.write_terminal(self.tokenizer.token_type().value, self.tokenizer.keyWord())
         self.eat('class')
 
-        t_type, class_name = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        t_type, class_name = self.tokenizer.token_type(), self.tokenizer.identifier()
         self.write_terminal(t_type.value, class_name)
 
         self.tokenizer.advance()
 
-        t_type, symbol = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        t_type, symbol = self.tokenizer.token_type(), self.tokenizer.symbol()
         self.write_terminal(t_type.value, symbol)
         self.eat('{')
 
-        t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
-        while token != '}':
-            assert t_type == Token_Types.keyword
-            if token == 'var':
+        t_type = self.tokenizer.token_type()
+        while t_type != Token_Types.symbol:
+            operation = self.tokenizer.keyWord()
+            if operation == 'var':
                 self.compile_class_var_dec()
-            elif token == 'function':
+            elif operation in ROUTINES:
                 self.compile_subroutine()
 
             self.tokenizer.advance()
 
-            t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
+            t_type = self.tokenizer.token_type()
 
-        assert t_type == Token_Types.symbol
-        self.write_terminal(t_type.value, token)
+        self.write_terminal(t_type.value, self.tokenizer.symbol())
         self.num_spaces -= 1
         self.write('class', delim=True, end=True)
 
@@ -114,44 +114,52 @@ class CompilationEngine():
         # self.eat('function' | 'method' | 'constructor')
         self.tokenizer.advance()
 
-        t_type, func_type = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        t_type = self.tokenizer.token_type()
+        if t_type == Token_Types.keyword:
+            func_type = self.tokenizer.keyWord()
+        else:
+            func_type = self.tokenizer.identifier()
         self.write_terminal(t_type.value, func_type)
 
         # self.eat('void' | some other type)
         self.tokenizer.advance()
 
-        t_type, func_name = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        t_type, func_name = self.tokenizer.token_type(), self.tokenizer.identifier()
         self.write_terminal(t_type.value, func_name)
 
-        t_type, symbol = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        self.tokenizer.advance()
+
+        t_type, symbol = self.tokenizer.token_type(), self.tokenizer.symbol()
         self.write_terminal(t_type.value, symbol)
         self.eat('(')
 
         self.compile_param_list()
 
-        t_type, symbol = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        t_type, symbol = self.tokenizer.token_type(), self.tokenizer.symbol()
         self.write_terminal(t_type.value, symbol)
         self.eat(')')
 
-        t_type, symbol = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        t_type, symbol = self.tokenizer.token_type(), self.tokenizer.symbol()
         self.write_terminal(t_type.value, symbol)
         self.eat('{')
 
-        t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
-        while token != '}':
-            assert t_type == Token_Types.keyword
+        t_type = self.tokenizer.token_type()
+        while t_type != Token_Types.symbol:
+            token = self.tokenizer.keyWord()
             if token == 'var':
                 self.compile_var_dec()
             elif token in STATEMENTS:
                 self.compile_statements()
+            else:
+                raise KeyError("an unknown step inside a subroutine")
             self.tokenizer.advance()
-            t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
+            t_type = self.tokenizer.token_type()
 
-        assert t_type == Token_Types.symbol
-        self.write_terminal(t_type, token)
+        self.write_terminal(t_type, self.tokenizer.symbol())
+        # self.eat('}')
         self.num_spaces -= 1
         self.write('subroutineDec', delim=True, end=True)
-        # self.eat('}')
+
 
     def compile_param_list(self):
         """
@@ -161,23 +169,28 @@ class CompilationEngine():
         self.write('paramaterList', delim=True)
         self.num_spaces += 1
 
-        t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
-        while token != ')':
+        t_type = self.tokenizer.token_type()
+        while t_type != Token_Types.symbol:
+            # Recognized type
+            if t_type == Token_Types.keyword:
+                token = self.tokenizer.keyWord()
+            else:
+                token = self.tokenizer.identifier()
+
             # Write var type
             self.write_terminal(t_type, token)
 
             self.tokenizer.advance()
 
             # Write var name
-            t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
+            t_type, token = self.tokenizer.token_type(), self.tokenizer.identifier()
             self.write_terminal(t_type, token)
 
             # Press on
             self.tokenizer.advance()
 
-            t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
+            t_type = self.tokenizer.token_type()
 
-        assert t_type == Token_Types.symbol
         self.num_spaces -= 1
         self.write('paramaterList', delim=True, end=True)
 

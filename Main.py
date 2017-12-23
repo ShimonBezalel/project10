@@ -67,9 +67,10 @@ def main(path, no_tokenize=True, no_compile=False):
                 dest_file_name = parse_filename(jack_file, FILE_EXTENSION_XML,
                                                 tokenize_only=True)
                 analyzer.tokenize(jack_file, dest_file_name)
-            if not no_compile:
-                analyzer.tokenize(os.path.join(dir_path, jack_file))
 
+            if not no_compile:
+                dest_file_name = parse_filename(jack_file, FILE_EXTENSION_XML)
+                analyzer.compile(jack_file, dest_file_name)
 
     except OSError:
         print("Could not open some file.\n "
@@ -110,4 +111,4 @@ if __name__ == "__main__":
         print("Error: Wrong number of arguments.\n"
               "Usage: JackCompiler file_name.jack or /existing_dir_path/")
     else:
-        main(sys.argv[FILE_PATH], no_compile=True, no_tokenize=False)
+        main(sys.argv[FILE_PATH], no_compile=False, no_tokenize=True)
