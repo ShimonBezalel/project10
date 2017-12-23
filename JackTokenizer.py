@@ -95,13 +95,7 @@ class Comp_Exp(Enum):
 
     """
     comment = re.compile("((\/\/.*)|(\/\*\*((([^*])*([^/])*)|(([^/])*([^*])*))\*\/))")
-
     string_single_line = re.compile("(\"((\\\\\")|([^\"]))*\")")
-    # string_single_line = re.compile("(\"[^\"]*\")")
-
-
-    # string_multi_line_open = re.compile("(\"([^\\\"]*(\\\")*[^\\\"]*)*)")
-    # string_multi_line_close = re.compile(".*\"")
     keywords = re.compile(gen_keywords())
     symbols = re.compile(gen_symbols())
     floats = re.compile("((\d+\.\d+)|(\d+))")
@@ -122,20 +116,16 @@ class JackTokenizer():
         with open(inputFile, 'r') as self.file:
             temp = self.file.read()
 
-        # remove comments
-        clean = Comp_Exp.comment.value.sub(" ", temp)
+        # remove comments and save the result for parsing
+        self.text = Comp_Exp.comment.value.sub(" ", temp)
 
-        self.text = clean
+        # Generator object that retrieves tokens one at a time
+        self.token_gen = self.token_gen()
 
-        self.token_gen = self.get_token()
-        # split up into lines
-        # self.lines = clean.split("\n")
+        # A helping bool value for calibrating has-more and advance
+        self.wait = False
 
-        # assuming non-empty file
-        # self.cur_token = None
-        # self.cur_line_index = 0
-        # self.cur_line = self.lines[self.cur_line_index]
-
+        self.cur_type, self.cur_val = None, None
 
     def has_more_tokens(self):
         """
@@ -148,10 +138,6 @@ class JackTokenizer():
             return True
         except StopIteration:
             return False
-        # return self.cur_line_index < self.lines.__len__()
-        # return not (self.cur_line != self.lines[-1] and
-        #             self.cur_char < self.cur_line.__len__())
-
 
     def advance(self):
         """
@@ -164,14 +150,12 @@ class JackTokenizer():
         else:
             self.cur_type, self.cur_val = self.token_gen.__next__()
 
-
     def token_type(self):
         """
         Returns the type of the tokenizer
         :return:
         """
         return self.cur_type
-
 
     def keyWord(self):
         """
@@ -182,7 +166,6 @@ class JackTokenizer():
         assert self.cur_type is Token_Types.keyword
         return self.cur_val
 
-
     def symbol(self):
         """
         Returns  a char representing current token. Only called when token_type is SYMBOL
@@ -190,7 +173,6 @@ class JackTokenizer():
         """
         assert self.cur_type is Token_Types.symbol
         return self.cur_val
-
 
     def identifier(self):
         """
@@ -201,7 +183,6 @@ class JackTokenizer():
         assert self.cur_type is Token_Types.identifier
         return self.cur_val
 
-
     def intVal(self):
         """
         Returns an int value representing current token. Only called when token_type is
@@ -210,7 +191,6 @@ class JackTokenizer():
         """
         assert self.cur_type is Token_Types.int_const
         return self.cur_val
-
 
     def stringVal(self):
         """
@@ -221,38 +201,24 @@ class JackTokenizer():
         assert self.cur_type is Token_Types.string_const
         return self.cur_val
 
-    def get_token(self):
+    def token_gen(self):
         """
 
         :return:
         """
-        # tokens = []
         # while True:
         while self.text:
             # In case of a token match, we yield it and substitute it from what is left
             # of the current line being read
 
-            string_match = Comp_Exp.string_single_line.value.match(
-                self.text)
+            string_match = Comp_Exp.string_single_line.value.match(self.text)
 
             # Found a full string in what is left of the current line.
             # Note the string-const values have their "" symbols left out.
             if string_match:
-                # tokens.append((Token_Types.string_const, string_match.group(0)))
                 yield (Token_Types.string_const, string_match.group(0)[1:-1])
-                # self.cur_line = self.cur_line[string_match.end():]
                 self.text = self.text[string_match.end():]
                 continue
-
-            # begin_string_match = Comp_Exp.string_multi_line_open.value.match(self.text)
-            # #self.cur_line)
-            # # Only the opening of a string found in current line. In this case we must
-            # # find the end rest of the string a lop them together. This can be done by
-            # # adding the next row to the current row and continuing from there.
-            # if begin_string_match:
-            #     self.cur_line_index += 1
-            #     self.cur_line = self.cur_line + "\n" + self.lines[self.cur_line_index]
-            #     continue
 
             keyword_match = Comp_Exp.keywords.value.match(self.text) #self.cur_line)
             if keyword_match:
@@ -261,7 +227,6 @@ class JackTokenizer():
                 self.text = self.text[keyword_match.end():]
                 continue
 
-
             symbols_match = Comp_Exp.symbols.value.match(self.text)
             if symbols_match:
                 symbol = symbols_match.group(0)
@@ -269,7 +234,7 @@ class JackTokenizer():
                     symbol = '&lt;'
                 elif symbol == '>':
                     symbol = '&gt;'
-                elif symbol == '\"': # karin: I think it supouse to be '/'
+                elif symbol == '\"': # its a '"' symbol. the \ is an escape char
                     symbol = '&quot;'
                 elif symbol == '&':
                     symbol = '&amp;'

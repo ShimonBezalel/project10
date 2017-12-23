@@ -4,7 +4,9 @@
 
 from JackTokenizer import JackTokenizer, Token_Types, KEYWORDS
 
-END_LINE = "\n"
+END_LINE    = "\n"
+TAB         = "\t"
+
 EXPREESSIONS = {"INT_CONST": "integerConstant",
                 "STRING_CONST": "stringConstant",
                 "KEYWORD": "KeywordConstant",
@@ -40,13 +42,17 @@ class CompilationEngine():
         Compiles a complete class
         :return:
         """
-        self.write('classDec', num_tabs=self.indent)
-
+        self.write('class', delim=True)
+        self.num_spaces += 1
+        self.write_terminal(self.tokenizer.token_type().value, self.tokenizer.keyWord())
+        self.eat('class')
+        t_type, class_name = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        self.write_terminal(t_type.value, class_name)
         self.tokenizer.advance()
-        self.write_terminal(Token_Types.identifier, self.tokenizer.identifier())
+        t_type, symbol = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        self.write_terminal(t_type.value, symbol)
+        self.eat('{')
 
-
-        self.write('{')
 
     def eat(self, string):
         """
@@ -98,8 +104,8 @@ class CompilationEngine():
         Compiles a var declaration
         :return:
         """
-        self.write("varDec", num_tabs=self.indent)
-        self.write_terminal("varDec", 4)
+        self.write("varDec")
+        # self.write_terminal("varDec", 4)
 
 
     def compile_statements(self):
@@ -471,20 +477,21 @@ class CompilationEngine():
 
         self.possible_more_expression()
 
-    def write(self, str, delim = False, end = False):
+    def write(self, statement, delim = False, end = False, new_line=True):
         """
 
-        :param str:
+        :param statement:
         :return:
         """
 
         if end:
-            str = "/" + str
+            statement = "/" + statement
         if delim:
-            self.output.write("\t" * self.num_spaces + "<" + str + ">" + END_LINE)
+            self.output.write(TAB * self.num_spaces + "<" + statement + ">")
         else:
-            self.output.write("\t" * self.num_spaces + str + END_LINE)
-
+            self.output.write(TAB * self.num_spaces + statement)
+        if new_line:
+            self.output.write(END_LINE)
 
     def write_terminal(self, t_type, arg):
         """
@@ -493,33 +500,32 @@ class CompilationEngine():
         :param arg:
         :return:
         """
-        self.write(t_type.value, num_tabs=self.indent)
-        self.write(t_type.value + " " + arg, delim=False,
-                   num_tabs=self.indent + 1)
-        self.write(t_type.value, num_tabs=self.indent, end=True)
+        self.write(t_type, delim=True, new_line=False)
+        self.write(" " + arg + " ", delim=False, new_line=False)
+        self.write(t_type, delim=True, new_line=False, end=True)
 
 
-    def write_recursive(self, name, advance_lim=1):
-        """
-
-        :param name:
-        :param advance_lim:
-        :return:
-        """
-        self.write(name, num_tabs=self.indent)
-
-        self.indent += 1
-        self.call_single()
-        for _ in range(advance_lim - 1):
-            if self.tokenizer.has_more_tokens():
-                self.tokenizer.advance()
-                self.call_single()
-            else:
-                raise ValueError("expected more tokens")
-
-        # self.write(name + " " + arg, delim=False,
-        #            num_tabs=self.indent + 1)
-        self.write(name, num_tabs=self.indent, end=True)
+    # def write_recursive(self, name, advance_lim=1):
+    #     """
+    #
+    #     :param name:
+    #     :param advance_lim:
+    #     :return:
+    #     """
+    #     self.write(name, num_tabs=self.indent)
+    #
+    #     self.indent += 1
+    #     self.call_single()
+    #     for _ in range(advance_lim - 1):
+    #         if self.tokenizer.has_more_tokens():
+    #             self.tokenizer.advance()
+    #             self.call_single()
+    #         else:
+    #             raise ValueError("expected more tokens")
+    #
+    #     # self.write(name + " " + arg, delim=False,
+    #     #            num_tabs=self.indent + 1)
+    #     self.write(name, num_tabs=self.indent, end=True)
 
 
     # def write_recursive(self, type):
@@ -539,70 +545,70 @@ class CompilationEngine():
 
 
 
-    def full_recursion(self):
-        """
+    # def full_recursion(self):
+    #     """
+    #
+    #     :param token:
+    #     :return:
+    #     """
+    #     while self.tokenizer.has_more_tokens():
+    #         self.tokenizer.advance()
+    #
+    #         type = self.tokenizer.token_type()
+    #
+    #         terminal_arg = False
+    #
+    #         if type == Token_Types.keyword:
+    #             terminal_arg = self.tokenizer.keyWord()
+    #
+    #         if type == Token_Types.symbol:
+    #             terminal_arg = self.tokenizer.symbol()
+    #
+    #         if type == Token_Types.identifier:
+    #             terminal_arg = self.tokenizer.identifier()
+    #
+    #         if type == Token_Types.int_const:
+    #             terminal_arg = self.tokenizer.intVal()
+    #
+    #         if type == Token_Types.string_const:
+    #             terminal_arg = self.tokenizer.stringVal()
+    #
+    #         if terminal_arg:
+    #             self.write_terminal(type, terminal_arg)
+    #
+    #         else:
+    #             self.write_recursive(type)
 
-        :param token:
-        :return:
-        """
-        while self.tokenizer.has_more_tokens():
-            self.tokenizer.advance()
 
-            type = self.tokenizer.token_type()
-
-            terminal_arg = False
-
-            if type == Token_Types.keyword:
-                terminal_arg = self.tokenizer.keyWord()
-
-            if type == Token_Types.symbol:
-                terminal_arg = self.tokenizer.symbol()
-
-            if type == Token_Types.identifier:
-                terminal_arg = self.tokenizer.identifier()
-
-            if type == Token_Types.int_const:
-                terminal_arg = self.tokenizer.intVal()
-
-            if type == Token_Types.string_const:
-                terminal_arg = self.tokenizer.stringVal()
-
-            if terminal_arg:
-                self.write_terminal(type, terminal_arg)
-
-            else:
-                self.write_recursive(type)
-
-
-    def call_single(self):
-        """
-
-        :return:
-        """
-        type = self.tokenizer.token_type()
-
-        terminal_arg = False
-
-        if type == Token_Types.keyword:
-            terminal_arg = self.tokenizer.keyWord()
-
-        if type == Token_Types.symbol:
-            terminal_arg = self.tokenizer.symbol()
-
-        if type == Token_Types.identifier:
-            terminal_arg = self.tokenizer.identifier()
-
-        if type == Token_Types.int_const:
-            terminal_arg = self.tokenizer.intVal()
-
-        if type == Token_Types.string_const:
-            terminal_arg = self.tokenizer.stringVal()
-
-        if terminal_arg:
-            self.write_terminal(type, terminal_arg)
-
-        else:
-            self.write_recursive(type)
+    # def call_single(self):
+    #     """
+    #
+    #     :return:
+    #     """
+    #     type = self.tokenizer.token_type()
+    #
+    #     terminal_arg = False
+    #
+    #     if type == Token_Types.keyword:
+    #         terminal_arg = self.tokenizer.keyWord()
+    #
+    #     if type == Token_Types.symbol:
+    #         terminal_arg = self.tokenizer.symbol()
+    #
+    #     if type == Token_Types.identifier:
+    #         terminal_arg = self.tokenizer.identifier()
+    #
+    #     if type == Token_Types.int_const:
+    #         terminal_arg = self.tokenizer.intVal()
+    #
+    #     if type == Token_Types.string_const:
+    #         terminal_arg = self.tokenizer.stringVal()
+    #
+    #     if terminal_arg:
+    #         self.write_terminal(type, terminal_arg)
+    #
+    #     else:
+    #         self.write_recursive(type)
 
 
 
