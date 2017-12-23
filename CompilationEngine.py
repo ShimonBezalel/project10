@@ -71,7 +71,7 @@ class CompilationEngine():
         assert t_type == Token_Types.symbol
         self.write_terminal(t_type.value, token)
         self.num_spaces -= 1
-        self.write('class', end=True)
+        self.write('class', delim=True, end=True)
 
     def eat(self, string):
         """
@@ -147,16 +147,40 @@ class CompilationEngine():
 
         assert t_type == Token_Types.symbol
         self.write_terminal(t_type, token)
+        self.num_spaces -= 1
+        self.write('subroutineDec', delim=True, end=True)
         # self.eat('}')
-
 
     def compile_param_list(self):
         """
         Compiles a parameter list, which may be empty, not including the "()"
         :return:
         """
+        self.write('paramaterList', delim=True)
+        self.num_spaces += 1
 
-        pass
+        t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        while token != ')':
+            # Write var type
+            self.write_terminal(t_type, token)
+
+            self.tokenizer.advance()
+
+            # Write var name
+            t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
+            self.write_terminal(t_type, token)
+
+            # Press on
+            self.tokenizer.advance()
+
+            t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
+
+
+
+        assert t_type == Token_Types.symbol
+        # self.write_terminal(t_type, token)
+        self.num_spaces -= 1
+        self.write('paramaterList', delim=True, end=True)
 
 
     def compile_var_dec(self):
