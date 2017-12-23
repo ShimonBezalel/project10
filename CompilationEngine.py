@@ -85,12 +85,13 @@ class CompilationEngine():
         type = self.tokenizer.token_type()
         value = "not keyword and not symbol"
         if type == Token_Types.keyword:
-           value = self.tokenizer.keyWord()
+            value = self.tokenizer.keyWord()
         elif type == Token_Types.symbol:
             value = self.tokenizer.symbol()
 
         if value != string:
             raise Exception(value + "- is not the expected string, " + string)
+        # assert value == string
         self.tokenizer.advance()
 
     def compile_class_var_dec(self):
@@ -101,9 +102,11 @@ class CompilationEngine():
         self.num_spaces += 1
 
         # First word is static or field.
+
+        # if self.tokenizer.token_type() != Token_Types.keyword:
+        #     raise Exception("Cant compile class variable declaration without keyword token.")
+
         # should i check before if i can get a keyword?
-        if self.tokenizer.token_type() != Token_Types.keyword:
-            raise Exception("Cant compile class variable declaration without keyword token.")
         var_sort = self.tokenizer.keyWord()
         if var_sort not in ["static", "field"]:
             raise Exception("Cant compile class variable declaration without static of field.")
@@ -124,8 +127,9 @@ class CompilationEngine():
             raise Exception("Cant compile class variable declaration with invalid identifier type.")
 
         # Third and so on, are variables names.
-        if self.tokenizer.token_type() != Token_Types.identifier:
-            raise Exception("Cant compile class variable declaration without varName identifier.")
+        # if self.tokenizer.token_type() != Token_Types.identifier:
+        #     raise Exception("Cant compile class variable declaration without varName identifier.")
+        # assert self.tokenizer.token_type() == Token_Types.identifier
         self.write("<identifier>\t" + self.tokenizer.identifier() + "\t</identifier>")
         self.tokenizer.advance()
         self.possible_varName()
@@ -148,9 +152,9 @@ class CompilationEngine():
             return
         # There is an varName
         self.write("<symbol> , </symbol>")
-        if self.tokenizer.token_type() != Token_Types.identifier:
-            raise Exception("Cant compile (class or not) variable declaration without varName" +
-                            " identifier after ',' .")
+        # if self.tokenizer.token_type() != Token_Types.identifier:
+        #     raise Exception("Cant compile (class or not) variable declaration without varName" +
+        #                     " identifier after ',' .")
         self.write("<identifier>\t" + self.tokenizer.identifier() + "\t</identifier>")
         self.tokenizer.advance()
         self.possible_varName()
@@ -260,8 +264,8 @@ class CompilationEngine():
             raise Exception("Cant compile variable declaration with invalid identifier type.")
 
         # Third and so on, are variables names.
-        if self.tokenizer.token_type() != Token_Types.identifier:
-            raise Exception("Cant compile variable declaration without varName identifier.")
+        # if self.tokenizer.token_type() != Token_Types.identifier:
+        #     raise Exception("Cant compile variable declaration without varName identifier.")
         self.write("<identifier>\t" + self.tokenizer.identifier() + "\t</identifier>")
         self.tokenizer.advance()
         self.possible_varName()
@@ -286,8 +290,18 @@ class CompilationEngine():
         self.write("statements", True)
         self.num_spaces += 1
 
-        if (self.tokenizer.token_type() == Token_Types.keyword and
-                    self.tokenizer.keyWord() in STATEMENTS):
+        self.possible_single_statement()
+
+        self.num_spaces -= 1
+        self.write("statements", True, True)
+
+    def possible_single_statement(self):
+        """
+        Compile 0 or more single statements..
+        """
+        # if (self.tokenizer.token_type() == Token_Types.keyword and
+        #             self.tokenizer.keyWord() in STATEMENTS):
+        if self.tokenizer.keyWord() in STATEMENTS:
             statement = self.tokenizer.keyWord()
             self.write(statement + "Statement", True)
             if statement == 'let':
@@ -303,10 +317,7 @@ class CompilationEngine():
             # else:
             #     raise Exception("Invalid statement.")
             self.write(statement + "Statement", True, True)
-        self.compile_statements()
-
-        self.num_spaces -= 1
-        self.write("statements", True, True)
+            self.possible_single_statement()
 
     def compile_do(self):
         """
@@ -318,8 +329,8 @@ class CompilationEngine():
         self.write("<keyword> do </keyword>")
 
         # is the check is necessary?  probably not..
-        if type != Token_Types.identifier:
-            raise Exception()
+        # if type != Token_Types.identifier:
+        #     raise Exception()
         self.write("<identifier>\t" + self.tokenizer.identifier() + "\t</identifier>")
         self.tokenizer.advance()
         self.subroutineCall_continue()
@@ -622,9 +633,11 @@ class CompilationEngine():
         try:
             self.compile_expression()
         except Exception:
+            self.num_spaces -= 1
+            self.write("expressionList", True, True)
             return
-        self.possible_more_expression()
 
+        self.possible_more_expression()
         self.num_spaces -= 1
         self.write("expressionList", True, True)
 
