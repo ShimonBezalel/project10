@@ -12,6 +12,7 @@ EXPREESSIONS = {"INT_CONST": "integerConstant",
                 "KEYWORD": "KeywordConstant",
                 "IDENTIFIER": "identifier"}
 # SPACE = " "
+STATEMENTS = ['let', 'if', 'while', 'do', 'return']
 
 class CompilationEngine():
     """
@@ -48,11 +49,29 @@ class CompilationEngine():
         self.eat('class')
         t_type, class_name = self.tokenizer.token_type(), self.tokenizer.keyWord()
         self.write_terminal(t_type.value, class_name)
+
         self.tokenizer.advance()
+
         t_type, symbol = self.tokenizer.token_type(), self.tokenizer.keyWord()
         self.write_terminal(t_type.value, symbol)
         self.eat('{')
 
+        t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        while token != '}':
+            assert t_type == Token_Types.keyword
+            if token == 'var':
+                self.compile_class_var_dec()
+            elif token == 'function':
+                self.compile_subroutine()
+
+            self.tokenizer.advance()
+
+            t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
+
+        assert t_type == Token_Types.symbol
+        self.write_terminal(t_type.value, token)
+        self.num_spaces -= 1
+        self.write('class', end=True)
 
     def eat(self, string):
         """
@@ -86,8 +105,49 @@ class CompilationEngine():
         Compiles a complete method, function or constructor
         :return:
         """
+        self.write('subroutineDec', delim=True)
+        self.num_spaces += 1
+        self.write_terminal(self.tokenizer.token_type().value, self.tokenizer.keyWord())
 
-        pass
+        # self.eat('function' | 'method' | 'constructor')
+        self.tokenizer.advance()
+
+        t_type, func_type = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        self.write_terminal(t_type.value, func_type)
+
+        # self.eat('void' | some other type)
+        self.tokenizer.advance()
+
+        t_type, func_name = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        self.write_terminal(t_type.value, func_name)
+
+        t_type, symbol = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        self.write_terminal(t_type.value, symbol)
+        self.eat('(')
+
+        self.compile_param_list()
+
+        t_type, symbol = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        self.write_terminal(t_type.value, symbol)
+        self.eat(')')
+
+        t_type, symbol = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        self.write_terminal(t_type.value, symbol)
+        self.eat('{')
+
+        t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
+        while token != '}':
+            assert t_type == Token_Types.keyword
+            if token == 'var':
+                self.compile_var_dec()
+            elif token in STATEMENTS:
+                self.compile_statements()
+            self.tokenizer.advance()
+            t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
+
+        assert t_type == Token_Types.symbol
+        self.write_terminal(t_type, token)
+        # self.eat('}')
 
 
     def compile_param_list(self):
@@ -104,8 +164,7 @@ class CompilationEngine():
         Compiles a var declaration
         :return:
         """
-        self.write("varDec")
-        # self.write_terminal("varDec", 4)
+        pass
 
 
     def compile_statements(self):
@@ -122,7 +181,7 @@ class CompilationEngine():
         self.num_spaces += 1
 
         if (self.tokenizer.token_type() == Token_Types.keyword and
-                    self.tokenizer.keyWord() in ['let', 'if', 'while', 'do', 'return']):
+                    self.tokenizer.keyWord() in STATEMENTS):
             statement = self.tokenizer.keyWord()
             self.write(statement + "Statement", True)
             if statement == 'let':
