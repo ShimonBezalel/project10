@@ -7,7 +7,7 @@ from JackTokenizer import JackTokenizer, Token_Types, KEYWORDS
 END_LINE    = "\n"
 TAB         = "\t"
 
-EXPREESSIONS = {"INT_CONST": "integerConstant",
+EXPRESSIONS = {"INT_CONST": "integerConstant",
                 "STRING_CONST": "stringConstant",
                 "KEYWORD": "KeywordConstant",
                 "IDENTIFIER": "identifier"}
@@ -528,17 +528,17 @@ class CompilationEngine():
         # If the token is a string_const or int_const
         if type in [Token_Types.string_const, Token_Types.int_const] :
             value = self.tokenizer.intVal() if type == Token_Types.int_const else self.tokenizer.stringVal()
-            self.write("<" + EXPREESSIONS[type] + ">\t" +
+            self.write("<" + EXPRESSIONS[type] + ">\t" +
                        value +
-                       "\t</" + EXPREESSIONS[type] + ">")
+                       "\t</" + EXPRESSIONS[type] + ">")
             self.tokenizer.advance()
 
         # If the token is a keyword
         elif type == Token_Types.keyword:
             if self.tokenizer.keyWord().value in ["TRUE", "FALSE", "NULL", "THIS"]:
-                self.write("<" + EXPREESSIONS[type] + ">\t" +
+                self.write("<" + EXPRESSIONS[type] + ">\t" +
                            self.tokenizer.keyWord().value.lower() +
-                           "\t</" + EXPREESSIONS[type] + ">")
+                           "\t</" + EXPRESSIONS[type] + ">")
                 self.tokenizer.advance()
             else:
                 raise Exception()
