@@ -597,3 +597,107 @@ class CompilationEngine():
 
 
 
+--------------------------------------------------------------------
+
+
+    def compile_class_var_dec(self):
+        """
+        Compiles a static declaration or a field declaration.
+        """
+        self.write("classVarDec", True)
+        self.num_spaces += 1
+
+        # First word is static or field.
+        # should i check before if i can get a keyword?
+        if self.tokenizer.token_type() != Token_Types.keyword:
+            raise Exception("Cant compile class variable declaration without keyword token.")
+        var_sort = self.tokenizer.keyWord()
+        if var_sort not in ["static", "field"]:
+            raise Exception("Cant compile class variable declaration without static of field.")
+        self.write("<keyword>\t" + var_sort + "\t</keyword>")
+        self.tokenizer.advance()
+
+        # Second word is type.
+        if self.tokenizer.token_type() == Token_Types.keyword:
+            var_type = self.tokenizer.keyWord()
+            if var_type not in ["int", "char", "boolean"]:
+                raise Exception("Cant compile class variable declaration with invalid keyword type.")
+            self.write("<keyword>\t" + var_type + "\t</keyword>")
+            self.tokenizer.advance()
+        elif self.tokenizer.token_type() == Token_Types.identifier:
+            self.write("<identifier>\t" + self.tokenizer.identifier() + "\t</identifier>")
+            self.tokenizer.advance()
+        else:
+            raise Exception("Cant compile class variable declaration with invalid identifier type.")
+
+        # Third and so on, are variables names.
+        if self.tokenizer.token_type() != Token_Types.identifier:
+            raise Exception("Cant compile class variable declaration without varName identifier.")
+        self.write("<identifier>\t" + self.tokenizer.identifier() + "\t</identifier>")
+        self.tokenizer.advance()
+        self.possible_varName()
+
+        # It will always end with ';'
+        self.eat(';')
+        self.write("<symbol> ; </symbol>")
+
+        self.num_spaces -= 1
+        self.write("classVarDec", True, True)
+
+    def possible_varName(self):
+        """
+        Compile 0 or more variable names, after an existing variable name.
+        """
+        try:
+            self.eat(',')
+        except:
+            # There is no varName
+            return
+        # There is an varName
+        self.write("<symbol> , </symbol>")
+        if self.tokenizer.token_type() != Token_Types.identifier:
+            raise Exception("Cant compile (class or not) variable declaration without varName" +
+                            " identifier after ',' .")
+        self.write("<identifier>\t" + self.tokenizer.identifier() + "\t</identifier>")
+        self.tokenizer.advance()
+        self.possible_varName()
+
+
+def compile_var_dec(self):
+        """
+        Compiles a var declaration
+        :return:
+        """
+        self.write("varDec", True)
+        self.num_spaces += 1
+
+        # First word is valid.
+        self.eat('var')
+        self.write("<keyword> var </keyword>")
+
+        # Second word is type.
+        if self.tokenizer.token_type() == Token_Types.keyword:
+            var_type = self.tokenizer.keyWord()
+            if var_type not in ["int", "char", "boolean"]:
+                raise Exception("Cant compile class variable declaration with invalid keyword type.")
+            self.write("<keyword>\t" + var_sort + "\t</keyword>")
+            self.tokenizer.advance()
+        elif self.tokenizer.token_type() == Token_Types.identifier:
+            self.write("<identifier>\t" + self.tokenizer.identifier() + "\t</identifier>")
+            self.tokenizer.advance()
+        else:
+            raise Exception("Cant compile class variable declaration with invalid identifier type.")
+
+        # Third and so on, are variables names.
+        if self.tokenizer.token_type() != Token_Types.identifier:
+            raise Exception("Cant compile class variable declaration without varName identifier.")
+        self.write("<identifier>\t" + self.tokenizer.identifier() + "\t</identifier>")
+        self.tokenizer.advance()
+        self.possible_varName()
+
+        # It will always end with ';'
+        self.eat(';')
+        self.write("<symbol> ; </symbol>")
+
+        self.num_spaces -= 1
+        self.write("varDec", True, True)
