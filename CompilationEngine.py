@@ -11,8 +11,8 @@ EXPREESSIONS = {"INT_CONST": "integerConstant",
                 "STRING_CONST": "stringConstant",
                 "KEYWORD": "KeywordConstant",
                 "IDENTIFIER": "identifier"}
-# SPACE = " "
-STATEMENTS = ['let', 'if', 'while', 'do', 'return']
+STATEMENTS  = ['let', 'if', 'while', 'do', 'return']
+OPERANDS    = ['+', '-', '*', '&quot', '&amp', '|', '&lt', '&gt', '=']
 
 class CompilationEngine():
     """
@@ -28,15 +28,16 @@ class CompilationEngine():
         """
         self.tokenizer = JackTokenizer(input_file)
         self.output = open(output_file)
-        # self.write("tokens")
-        # self.indent = 0
-
-        # self.full_recursion()
-        # with open(output_file) as self.output:
-        #     pass
         self.num_spaces = 0
-        # self.prefix = ""
 
+        while self.tokenizer.has_more_tokens():
+            self.tokenizer.advance()
+            assert self.tokenizer.token_type() == Token_Types.keyword
+            if self.tokenizer.keyWord() == 'class':
+                self.compile_class()
+            else:
+                raise KeyError("Received a token that does not fit the begining of a "
+                               "module. " + self.tokenizer.keyWord() + " in " + input_file)
 
     def compile_class(self):
         """
@@ -47,6 +48,7 @@ class CompilationEngine():
         self.num_spaces += 1
         self.write_terminal(self.tokenizer.token_type().value, self.tokenizer.keyWord())
         self.eat('class')
+
         t_type, class_name = self.tokenizer.token_type(), self.tokenizer.keyWord()
         self.write_terminal(t_type.value, class_name)
 
@@ -175,13 +177,9 @@ class CompilationEngine():
 
             t_type, token = self.tokenizer.token_type(), self.tokenizer.keyWord()
 
-
-
         assert t_type == Token_Types.symbol
-        # self.write_terminal(t_type, token)
         self.num_spaces -= 1
         self.write('paramaterList', delim=True, end=True)
-
 
     def compile_var_dec(self):
         """
@@ -189,7 +187,6 @@ class CompilationEngine():
         :return:
         """
         pass
-
 
     def compile_statements(self):
         """
@@ -235,7 +232,7 @@ class CompilationEngine():
         self.num_spaces += 1
         self.write("<keyword> do </keyword>")
 
-        # is the check is necessary?
+        # is the check is necessary?  probably not..
         if type != Token_Types.identifier:
             raise Exception()
         self.write("<identifier>\t" + self.tokenizer.identifier() + "\t</identifier>")
@@ -516,7 +513,7 @@ class CompilationEngine():
             return
         op = self.tokenizer.symbol()
 
-        if op not in ['+', '-', '*', '&quot', '&amp', '|', '&lt', '&gt', '=']:
+        if op not in OPERANDS:
             # raise Exception("Invalid operator use in term.")
             return # should it be like this?
 
