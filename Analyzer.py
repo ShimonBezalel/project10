@@ -36,9 +36,6 @@ class Analyzer():
         engine = CompilationEngine(source, destination)
 
 
-
-
-
 if __name__ == '__main__':
 
     a = Analyzer()
