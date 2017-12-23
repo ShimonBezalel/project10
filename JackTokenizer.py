@@ -307,23 +307,9 @@ class JackTokenizer():
                 raise StopIteration("found impossible situation: " + self.text)
 
 
-
-
-
 if __name__ == '__main__':
 
-    f = JackTokenizer("tests/test2/Main.jack")
-    with open("tests/test2/results/MainT.xml", 'w') as out:
-        out.write("<tokens>\n")
-        while f.has_more_tokens():
-
-            f.advance()
-            out.write("<" + f.token_type().value + "> " + f.cur_val + " </" +
-                      f.token_type().value + ">\n")
-
-            print(f.token_type().value.lower(), f.cur_val)
-        out.write("</tokens>\n")
-
+    pass
 
 
 
