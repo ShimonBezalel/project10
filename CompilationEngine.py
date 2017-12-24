@@ -36,7 +36,7 @@ class CompilationEngine():
                 if self.tokenizer.keyWord() == 'class':
                     self.compile_class()
                 else:
-                    raise KeyError("Received a token that does not fit the begining of a "
+                    raise KeyError("Received a token that does not fit the beginning of a "
                                    "module. " + self.tokenizer.keyWord()
                                    + " in " + input_file)
 
