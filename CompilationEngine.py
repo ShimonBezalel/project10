@@ -12,6 +12,7 @@ TAB         = "\t"
 #                 "KEYWORD": "KeywordConstant",
 #                 "IDENTIFIER": "identifier"}
 STATEMENTS      = ['let', 'if', 'while', 'do', 'return']
+KEY_TERMS       = ["true", "false", "null", "this"]
 # SPECIAL_SYMBOL  = {'&quot;': "\"", '&amp;': "&", '&lt;': "<", '&gt;': ">"}
 OPERANDS        = ['+', '-', '*', '&amp;', '|', '&lt;', '&gt;', '=', "/"]
 ROUTINES        = ['function', 'method', 'constructor']
@@ -232,7 +233,7 @@ class CompilationEngine():
         self.num_spaces += 1
 
         t_type = self.tokenizer.token_type()
-        finished = False
+        finished = t_type == Token_Types.symbol and self.tokenizer.symbol() == ")"
         while not finished:
             # Recognized type
             if t_type == Token_Types.keyword:
@@ -240,7 +241,7 @@ class CompilationEngine():
             elif t_type == Token_Types.identifier:
                 token = self.tokenizer.identifier()
             else:
-                raise KeyError("Got some weird type in paramlist ", t_type)
+                raise KeyError("Got some weird type in paramlist: " + t_type.value)
 
             # Write var type
             self.write_terminal(t_type.value, token)
@@ -565,9 +566,9 @@ class CompilationEngine():
 
         # If the token is a keyword
         elif type == Token_Types.keyword:
-            if self.tokenizer.keyWord() in ["TRUE", "FALSE", "NULL", "THIS"]:
+            if self.tokenizer.keyWord() in KEY_TERMS:
                 self.write("<" + type.value + "> " +
-                           self.tokenizer.keyWord().value.lower() +
+                           self.tokenizer.keyWord() +
                            " </" + type.value + ">")
                 self.tokenizer.advance()
             else:
@@ -589,8 +590,9 @@ class CompilationEngine():
                 self.eat(')')
                 self.write("<symbol> ) </symbol>")
             elif self.tokenizer.symbol() in ["-", "~"]:
-                self.eat(self.tokenizer.symbol())
                 self.write("<symbol> " + self.tokenizer.symbol() + " </symbol>")
+                self.eat(self.tokenizer.symbol())
+                # self.write("<symbol> " + self.tokenizer.symbol() + " </symbol>")
                 self.compile_term()
             else:
                 raise Exception()
