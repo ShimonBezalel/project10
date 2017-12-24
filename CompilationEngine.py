@@ -7,13 +7,14 @@ from JackTokenizer import JackTokenizer, Token_Types, KEYWORDS
 END_LINE    = "\n"
 TAB         = "\t"
 
-EXPRESSIONS = {"INT_CONST": "integerConstant",
-                "STRING_CONST": "stringConstant",
-                "KEYWORD": "KeywordConstant",
-                "IDENTIFIER": "identifier"}
-STATEMENTS  = ['let', 'if', 'while', 'do', 'return']
-OPERANDS    = ['+', '-', '*', '&quot', '&amp', '|', '&lt', '&gt', '=']
-ROUTINES    = ['function', 'method', 'constructor']
+# EXPRESSIONS = {"INT_CONST": "integerConstant",
+#                 "STRING_CONST": "stringConstant",
+#                 "KEYWORD": "KeywordConstant",
+#                 "IDENTIFIER": "identifier"}
+STATEMENTS      = ['let', 'if', 'while', 'do', 'return']
+SPECIAL_SYMBOL  = {'&quot;': "\"", '&amp;': "&", '&lt;': "<", '&gt;': ">"}
+OPERANDS        = ['+', '-', '*', '&quot;', '&amp;', '|', '&lt;', '&gt;', '=']
+ROUTINES        = ['function', 'method', 'constructor']
 
 class CompilationEngine():
     """
@@ -67,7 +68,7 @@ class CompilationEngine():
             elif operation in ROUTINES:
                 self.compile_subroutine()
 
-            self.tokenizer.advance()
+            # self.tokenizer.advance()
 
             t_type = self.tokenizer.token_type()
 
@@ -209,11 +210,11 @@ class CompilationEngine():
                 self.compile_statements()
             else:
                 raise KeyError("an unknown step inside a subroutine")
-            self.tokenizer.advance()
+            # self.tokenizer.advance()
             t_type = self.tokenizer.token_type()
 
         self.write_terminal(t_type, self.tokenizer.symbol())
-        # self.eat('}')
+        self.eat('}')
         self.num_spaces -= 1
         self.write('subroutineDec', delim=True, end=True)
 
@@ -542,17 +543,17 @@ class CompilationEngine():
         # If the token is a string_const or int_const
         if type in [Token_Types.string_const, Token_Types.int_const] :
             value = self.tokenizer.intVal() if type == Token_Types.int_const else self.tokenizer.stringVal()
-            self.write("<" + EXPRESSIONS[type] + ">\t" +
+            self.write("<" + type.value + ">\t" +
                        value +
-                       "\t</" + EXPRESSIONS[type] + ">")
+                       "\t</" + type.value + ">")
             self.tokenizer.advance()
 
         # If the token is a keyword
         elif type == Token_Types.keyword:
             if self.tokenizer.keyWord().value in ["TRUE", "FALSE", "NULL", "THIS"]:
-                self.write("<" + EXPRESSIONS[type] + ">\t" +
+                self.write("<" + type.value + ">\t" +
                            self.tokenizer.keyWord().value.lower() +
-                           "\t</" + EXPRESSIONS[type] + ">")
+                           "\t</" + type.value + ">")
                 self.tokenizer.advance()
             else:
                 raise Exception()
@@ -630,6 +631,8 @@ class CompilationEngine():
             return # should it be like this?
 
         try:
+            # if op in SPECIAL_SYMBOL.keys():
+            #     op = SPECIAL_SYMBOL[op]
             self.eat(op)
         except Exception:
             return
@@ -671,7 +674,8 @@ class CompilationEngine():
 
         self.possible_more_expression()
 
-    def write(self, statement, delim = False, end = False, new_line=True):
+    def write(self, statement, delim = False, end = False, new_line=True,
+              no_space = False):
         """
 
         :param statement:
@@ -681,11 +685,20 @@ class CompilationEngine():
         if end:
             statement = "/" + statement
         if delim:
-            self.output.write(TAB * self.num_spaces + "<" + statement + ">")
-        else:
-            self.output.write(TAB * self.num_spaces + statement)
+            statement = "<" + statement + ">"
+        if no_space:
+            statement = TAB * self.num_spaces + statement
         if new_line:
-            self.output.write(END_LINE)
+            statement += END_LINE
+
+        self.output.write(statement)
+
+        # if delim:
+        #     self.output.write(TAB * self.num_spaces + "<" + statement + ">")
+        # else:
+
+        # if new_line:
+        #     self.output.write(END_LINE)
 
     def write_terminal(self, t_type, arg):
         """
@@ -694,9 +707,9 @@ class CompilationEngine():
         :param arg:
         :return:
         """
-        self.write(t_type, delim=True, new_line=False)
-        self.write(" " + arg + " ", delim=False, new_line=False)
-        self.write(t_type, delim=True, new_line=False, end=True)
+        self.write(t_type, delim=True, new_line=False, no_space=False)
+        self.write(arg, delim=False, new_line=False, no_space=True)
+        self.write(t_type, delim=True, new_line=True, end=True, no_space=True)
 
 
     # def write_recursive(self, name, advance_lim=1):
