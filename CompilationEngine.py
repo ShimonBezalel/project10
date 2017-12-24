@@ -5,7 +5,7 @@
 from JackTokenizer import JackTokenizer, Token_Types, KEYWORDS
 
 END_LINE    = "\n"
-SPACE         = " "
+SPACE         = "  "
 
 # EXPRESSIONS = {"INT_CONST": "integerConstant",
 #                 "STRING_CONST": "stringConstant",
@@ -31,6 +31,7 @@ class CompilationEngine():
         """
         self.tokenizer = JackTokenizer(input_file)
         self.num_spaces = 0
+        self.buffer = ""
         with open(output_file, 'w') as self.output:
             while self.tokenizer.has_more_tokens():
                 self.tokenizer.advance()
@@ -202,9 +203,15 @@ class CompilationEngine():
         self.write_terminal(t_type.value, symbol)
         self.eat(')')
 
+        self.write("subroutineBody", delim=True)
+
+        self.num_spaces += 1
+
         t_type, symbol = self.tokenizer.token_type(), self.tokenizer.symbol()
         self.write_terminal(t_type.value, symbol)
         self.eat('{')
+
+
 
         t_type = self.tokenizer.token_type()
         while t_type != Token_Types.symbol:
@@ -220,6 +227,11 @@ class CompilationEngine():
 
         self.write_terminal(t_type.value, self.tokenizer.symbol())
         self.eat('}')
+
+        self.num_spaces -= 1
+
+        self.write("subroutineBody", delim=True, end=True)
+
         self.num_spaces -= 1
         self.write('subroutineDec', delim=True, end=True)
 
@@ -229,7 +241,7 @@ class CompilationEngine():
         Compiles a parameter list, which may be empty, not including the "()"
         :return:
         """
-        self.write('paramaterList', delim=True)
+        self.write('parameterList', delim=True)
         self.num_spaces += 1
 
         t_type = self.tokenizer.token_type()
@@ -265,7 +277,7 @@ class CompilationEngine():
 
 
         self.num_spaces -= 1
-        self.write('paramaterList', delim=True, end=True)
+        self.write('parameterList', delim=True, end=True)
 
     def compile_var_dec(self):
         """
@@ -500,14 +512,17 @@ class CompilationEngine():
         Compile an expression.
         :return:
         """
-        self.write("expression", True)
+        self.buffer += self.num_spaces * SPACE + "<expression>\n"
         self.num_spaces += 1
+        try:
+            self.compile_term()
+            self.possible_op_term()
+            self.num_spaces -= 1
+            self.write("expression", True, True)
+        except:
+            self.cleanbuffer()
 
-        self.compile_term()
-        self.possible_op_term()
 
-        self.num_spaces -= 1
-        self.write("expression", True, True)
 
     def subroutineCall_continue(self):
         """
@@ -551,7 +566,7 @@ class CompilationEngine():
         advanced over.
         :return:
         """
-        self.write("term", True)
+        self.buffer += SPACE * self.num_spaces + "<term>\n"
         self.num_spaces += 1
 
         type = self.tokenizer.token_type()
@@ -561,7 +576,7 @@ class CompilationEngine():
             value = self.tokenizer.intVal() if type == Token_Types.int_const else self.tokenizer.stringVal()
             self.write("<" + type.value + "> " +
                        value +
-                       " </" + type.value + ">")
+                       " </" + type.value + ">", use_buffer=True)
             self.tokenizer.advance()
 
         # If the token is a keyword
@@ -569,32 +584,36 @@ class CompilationEngine():
             if self.tokenizer.keyWord() in KEY_TERMS:
                 self.write("<" + type.value + "> " +
                            self.tokenizer.keyWord() +
-                           " </" + type.value + ">")
+                           " </" + type.value + ">", use_buffer=True)
                 self.tokenizer.advance()
             else:
+                self.cleanbuffer()
                 raise Exception()
 
         # If the token is an identifier
         elif type == Token_Types.identifier:
             # value = self.tokenizer.identifier()
-            self.write("<identifier> " + self.tokenizer.identifier() + " </identifier>")
+            self.write("<identifier> " + self.tokenizer.identifier() + " </identifier>",
+                       use_buffer=True)
             self.tokenizer.advance()
             self.possible_identifier_continue()
 
         # If the token is an symbol
         elif type == Token_Types.symbol:
+
             if self.tokenizer.symbol() == '(':
                 self.eat('(')
-                self.write("<symbol> ( </symbol>")
+                self.write("<symbol> ( </symbol>", use_buffer=True)
                 self.compile_expression()
                 self.eat(')')
                 self.write("<symbol> ) </symbol>")
             elif self.tokenizer.symbol() in ["-", "~"]:
-                self.write("<symbol> " + self.tokenizer.symbol() + " </symbol>")
+                self.write("<symbol> " + self.tokenizer.symbol() + " </symbol>", use_buffer=True)
                 self.eat(self.tokenizer.symbol())
                 # self.write("<symbol> " + self.tokenizer.symbol() + " </symbol>")
                 self.compile_term()
             else:
+                self.cleanbuffer()
                 raise Exception()
 
         else:
@@ -673,6 +692,8 @@ class CompilationEngine():
             self.write("expressionList", True, True)
             return
 
+
+
         self.possible_more_expression()
         self.num_spaces -= 1
         self.write("expressionList", True, True)
@@ -692,13 +713,15 @@ class CompilationEngine():
         self.possible_more_expression()
 
     def write(self, statement, delim = False, end = False, new_line=True,
-              no_space = False):
+              no_space = False, use_buffer=False):
         """
 
         :param statement:
         :return:
         """
-
+        if use_buffer:
+            self.output.write(self.buffer)
+            self.buffer = ""
         if end:
             statement = "/" + statement
         if delim:
@@ -707,6 +730,7 @@ class CompilationEngine():
             statement = SPACE * self.num_spaces + statement
         if new_line:
             statement += END_LINE
+
 
         self.output.write(statement)
 
@@ -727,6 +751,10 @@ class CompilationEngine():
         self.write(t_type, delim=True, new_line=False, no_space=False)
         self.write(" " + arg + " ", delim=False, new_line=False, no_space=True)
         self.write(t_type, delim=True, new_line=True, end=True, no_space=True)
+
+    def cleanbuffer(self):
+        self.num_spaces -= 1
+        self.buffer = ""
 
 
     # def write_recursive(self, name, advance_lim=1):
