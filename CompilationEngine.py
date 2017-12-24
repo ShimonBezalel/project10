@@ -361,7 +361,10 @@ class CompilationEngine():
         self.num_spaces += 1
         self.write("<keyword> let </keyword>")
 
-        self.compile_var_dec()
+        # self.compile_var_dec()
+        # self.write("<identifier>\t" + self.tokenizer.identifier() + "\t</identifier>")
+        self.write_terminal("identifier", self.tokenizer.identifier())
+        self.tokenizer.advance()
         self.possible_array()
 
         self.eat('=')
