@@ -5,7 +5,7 @@
 from JackTokenizer import JackTokenizer, Token_Types, KEYWORDS
 
 END_LINE    = "\n"
-TAB         = "\t"
+SPACE         = " "
 
 # EXPRESSIONS = {"INT_CONST": "integerConstant",
 #                 "STRING_CONST": "stringConstant",
@@ -704,7 +704,7 @@ class CompilationEngine():
         if delim:
             statement = "<" + statement + ">"
         if not no_space:
-            statement = TAB * self.num_spaces + statement
+            statement = SPACE * self.num_spaces + statement
         if new_line:
             statement += END_LINE
 
